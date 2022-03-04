@@ -75,7 +75,7 @@ async function run() {
             })
         }
 
-        let re = new RegExp(`${osPlatform}.${osArch}.${osPlatform == "windows" ? "*zip" : "*tar.gz"}`)
+        let re = new RegExp(`${osPlatform}.${osArch}.*\.(tar.gz|zip)`)
         let asset = getReleaseUrl.data.assets.find(obj => {
             core.info(`searching for ${obj.name} with ${re.source}`)
             return re.test(obj.name)
@@ -92,7 +92,14 @@ async function run() {
 
         core.info(`Downloading ${project} from ${url}`)
         const binPath = await tc.downloadTool(url);
-        let extractedPath = await tc.extractTar(binPath);
+        let extractedPath: string;
+        if (binPath.endsWith('.tar.gz')) {
+            extractedPath = await tc.extractTar(binPath);
+        } else if (binPath.endsWith('.zip')) {
+            extractedPath = await tc.extractZip(binPath);
+        } else {
+            throw new Error('Unreachable error? Downloaded file is neither .tar.gz nor .zip');
+        }
         core.info(`Successfully extracted ${project} to ${extractedPath}`)
 
         core.addPath(extractedPath);
